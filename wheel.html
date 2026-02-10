@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wheel of Market</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <style>
+        #wheel { transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+    </style>
+</head>
+<body class="bg-black text-white flex flex-col items-center justify-center min-h-screen">
+    <h1 class="text-3xl font-bold mb-8">ตลาดผันผวน! (Admin Only)</h1>
+    
+    <div id="wheel" class="w-64 h-64 border-8 border-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold bg-gray-800">
+        ?
+    </div>
+
+    <button onclick="spinWheel()" class="mt-10 bg-red-600 hover:bg-red-700 px-8 py-4 rounded-full text-xl font-bold shadow-lg">
+        หมุนวงล้อเปลี่ยนโลก!
+    </button>
+
+    <p id="status" class="mt-4 text-yellow-400 font-mono"></p>
+
+    <script>
+        const firebaseConfig = { /* ใส่ Config เดียวกับด้านบน */ };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function spinWheel() {
+            const btn = document.querySelector('button');
+            btn.disabled = true;
+
+            // สุ่มเหตุการณ์
+            const events = [
+                { name: "วิกฤตเศรษฐกิจ", multi: {psuwit: 0.5, btc: 0.7, gold: 1.2, save: 1.0} },
+                { name: "Bull Market", multi: {psuwit: 1.5, btc: 2.0, gold: 0.9, save: 1.0} },
+                { name: "PSUWIT New High", multi: {psuwit: 3.0, btc: 1.0, gold: 1.0, save: 1.0} },
+                { name: "สงครามโลก", multi: {psuwit: 0.2, btc: 0.5, gold: 2.5, save: 1.0} }
+            ];
+
+            const result = events[Math.floor(Math.random() * events.length)];
+            
+            // หมุน UI (จำลอง)
+            const deg = Math.floor(5000 + Math.random() * 5000);
+            document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
+
+            setTimeout(() => {
+                document.getElementById('wheel').innerText = result.name;
+                document.getElementById('status').innerText = `ส่งผลต่อผู้เล่น 40 คนแล้ว!`;
+                
+                // ส่งค่าไป Firebase
+                db.ref('market').set(result.multi);
+                btn.disabled = false;
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
