@@ -113,7 +113,7 @@
         function reset() {
             if(confirm("รีเซ็ตระบบทั้งหมด?")) {
                 currentYear = 0;
-                adminPrices = { psuwit: 100, btc: 1800000, gold: 34500 };
+                adminPrices = { psuwit: 100, btc: 2000000, gold: 70000 };
                 db.ref('market_state').set({ year: 0, multi: {psuwit: 1, btc: 1, gold: 1, save: 1}, event: "Reset" });
                 updatePriceDisplay();
                 document.getElementById('year-label').innerText = "Ready";
