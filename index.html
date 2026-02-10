@@ -2,27 +2,31 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>PSUWIT Admin - Market Control</title>
+    <title>PSUWIT Investment Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-900 text-white p-6 flex flex-col items-center min-h-screen">
-    <h1 class="text-3xl font-black text-yellow-500 mb-8">ADMIN CONTROL PANEL</h1>
-    
-    <div class="bg-slate-800 p-8 rounded-3xl border-4 border-dashed border-slate-700 text-center mb-8 w-full max-w-md">
-        <div id="year-display" class="text-xl text-slate-400 uppercase font-bold">เตรียมเริ่มเกม</div>
-        <div id="event-display" class="text-3xl font-black mt-2">YEAR 0</div>
-    </div>
+<body class="bg-[#0b0f1a] text-white p-4 min-h-screen">
+    <div class="max-w-md mx-auto">
+        <div class="text-center mb-6">
+            <h1 class="text-yellow-500 text-3xl font-black italic">YEAR <span id="year-ui">0</span></h1>
+            <p class="text-gray-400 text-xs uppercase tracking-widest">ทุนปีนี้: <span id="budget-ui" class="font-bold">200,000</span></p>
+        </div>
 
-    <div class="grid grid-cols-2 gap-4 w-full max-w-md mb-6">
-        <button onclick="spin('BULL')" class="bg-green-600 hover:bg-green-500 p-6 rounded-2xl font-bold">BULL MARKET 🚀</button>
-        <button onclick="spin('CRASH')" class="bg-red-600 hover:bg-red-500 p-6 rounded-2xl font-bold">MARKET CRASH 📉</button>
-        <button onclick="spin('WAR')" class="bg-yellow-600 hover:bg-yellow-500 p-6 rounded-2xl font-bold">GOLD RUSH ⚔️</button>
-        <button onclick="spin('NORMAL')" class="bg-blue-600 hover:bg-blue-500 p-6 rounded-2xl font-bold">NORMAL ⚖️</button>
-    </div>
+        <div class="bg-gray-900 rounded-3xl p-6 border border-gray-800 shadow-2xl mb-6">
+            <p class="text-gray-500 text-xs font-bold uppercase">Net Worth (รวมกำไรปีที่แล้ว)</p>
+            <h2 id="net-worth" class="text-4xl font-mono font-bold my-2">200,000.00</h2>
+            <div id="overall-diff" class="text-sm font-bold">±0.00% (0.00)</div>
+        </div>
 
-    <button onclick="resetGame()" class="w-full max-w-md bg-white text-black p-4 rounded-xl font-black uppercase hover:bg-gray-200">Reset All Players to Year 0</button>
+        <div id="asset-container" class="space-y-4"></div>
+
+        <div class="mt-6 p-4 bg-gray-900/50 border border-dashed border-gray-700 rounded-2xl flex justify-between items-center">
+            <span class="text-gray-400 font-bold uppercase text-xs">เงินสดคงเหลือปีนี้:</span>
+            <span id="cash-left" class="text-2xl font-mono font-bold text-green-400">200,000</span>
+        </div>
+    </div>
 
     <script>
         const firebaseConfig = { 
@@ -35,37 +39,108 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentYear = 0;
+        let currentBudget = 200000; // ทุนเริ่ม 200,000
+        let localYear = 0; 
+        let basePrices = { psuwit: 100, btc: 1800000, gold: 34500, save: 1 };
+        const assets = {
+            psuwit: { name: "หุ้น PSUWIT", invest: 0, color: "blue" },
+            btc: { name: "Bitcoin (BTC)", invest: 0, color: "orange" },
+            gold: { name: "ทองคำ", invest: 0, color: "yellow" },
+            save: { name: "ออมทรัพย์ (0.75%)", invest: 0, color: "emerald" }
+        };
 
-        function spin(type) {
-            currentYear++;
-            let multi = { psuwit: 1, btc: 1, gold: 1, save: 1 };
-            if(type === 'BULL') multi = { psuwit: 1.5, btc: 2.2, gold: 0.9, save: 1 };
-            else if(type === 'CRASH') multi = { psuwit: 0.4, btc: 0.2, gold: 0.8, save: 1 };
-            else if(type === 'WAR') multi = { psuwit: 0.8, btc: 0.6, gold: 2.5, save: 1 };
-            else multi = { psuwit: 1.1, btc: 1.1, gold: 1.05, save: 1 };
-
-            db.ref('market_state').set({
-                year: currentYear,
-                event: type,
-                multi: multi,
-                timestamp: Date.now()
+        function renderUI() {
+            const container = document.getElementById('asset-container');
+            container.innerHTML = '';
+            Object.keys(assets).forEach(key => {
+                const asset = assets[key];
+                container.innerHTML += `
+                    <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800">
+                        <div class="flex justify-between mb-3">
+                            <span class="font-bold text-${asset.color}-400 text-sm">${asset.name}</span>
+                            <span class="text-xs font-mono text-gray-400">ราคา: ฿${basePrices[key].toLocaleString(undefined,{maximumFractionDigits:0})}</span>
+                        </div>
+                        <input type="number" value="${asset.invest}" 
+                            class="w-full bg-black border border-gray-700 rounded-lg p-2 mb-3 text-right text-yellow-500 font-mono text-sm"
+                            onchange="handleUpdate('${key}', this.value)">
+                        <input type="range" min="0" max="${currentBudget}" step="100" value="${asset.invest}" 
+                            class="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-${asset.color}-500"
+                            oninput="handleUpdate('${key}', this.value)">
+                    </div>`;
             });
-            updateUI(currentYear, type);
+            updateSummary();
         }
 
-        function resetGame() {
-            if(confirm("รีเซ็ตผู้เล่นทุกคน?")) {
-                currentYear = 0;
-                db.ref('market_state').set({ year: 0, multi: { psuwit: 1, btc: 1, gold: 1, save: 1 } });
-                updateUI(0, "RESET");
+        function handleUpdate(key, val) {
+            let value = parseFloat(val) || 0;
+            let otherSum = 0;
+            Object.keys(assets).forEach(k => { if(k !== key) otherSum += assets[k].invest; });
+            if (otherSum + value > currentBudget) value = currentBudget - otherSum;
+            assets[key].invest = value;
+            renderUI();
+        }
+
+        function updateSummary() {
+            let totalInvested = 0;
+            Object.keys(assets).forEach(key => totalInvested += assets[key].invest);
+            const cashLeft = currentBudget - totalInvested;
+            document.getElementById('cash-left').innerText = cashLeft.toLocaleString();
+            document.getElementById('budget-ui').innerText = currentBudget.toLocaleString();
+            document.getElementById('net-worth').innerText = currentBudget.toLocaleString(undefined, {minimumFractionDigits:2});
+        }
+
+        db.ref('market_state').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            // ตรรกะรีเซ็ตเกม
+            if (data.year === 0) {
+                currentBudget = 200000;
+                localYear = 0;
+                basePrices = { psuwit: 100, btc: 1800000, gold: 34500, save: 1 };
+                Object.keys(assets).forEach(k => assets[k].invest = 0);
+                document.getElementById('year-ui').innerText = "0";
+                renderUI();
+                return;
             }
-        }
 
-        function updateUI(y, e) {
-            document.getElementById('year-display').innerText = "สถานะปัจจุบัน";
-            document.getElementById('event-display').innerText = `YEAR ${y} (${e})`;
-        }
+            // ตรรกะเปลี่ยนปีและคิดกำไรทบต้น
+            if (data.year > localYear) {
+                let totalEndOfYear = 0;
+                let unusedCash = currentBudget;
+
+                Object.keys(assets).forEach(key => {
+                    const invest = assets[key].invest;
+                    unusedCash -= invest;
+                    
+                    // ดอกเบี้ย 0.75% เฉพาะเงินในออมทรัพย์ตอนเปลี่ยนปี
+                    const interest = (key === 'save') ? 1.0075 : 1;
+                    totalEndOfYear += (invest * data.multi[key] * interest);
+                    
+                    // อัปเดตราคากลางปีใหม่
+                    if (key !== 'save') basePrices[key] *= data.multi[key];
+                });
+
+                const newTotal = totalEndOfYear + unusedCash;
+                const diff = newTotal - currentBudget;
+                const pct = (diff / currentBudget * 100).toFixed(2);
+
+                // แสดงผลกำไรปีที่ผ่านมาเป็นสีแดง/เขียว
+                const overall = document.getElementById('overall-diff');
+                overall.innerText = `${diff >= 0 ? '+' : ''}${pct}% (${diff.toLocaleString()})`;
+                overall.className = `text-sm font-bold ${diff >= 0 ? 'text-green-400' : 'text-red-500'}`;
+
+                currentBudget = newTotal;
+                localYear = data.year;
+                Object.keys(assets).forEach(k => assets[k].invest = 0); // ล้างพอร์ตให้ลงใหม่ตามทุนที่มี
+                
+                document.getElementById('year-ui').innerText = localYear;
+                renderUI();
+                alert(`ปีที่ ${localYear} เริ่มต้น! ทุนใหม่ของคุณคือ ${newTotal.toLocaleString()} บาท (รวมดอกเบี้ยแล้ว)`);
+            }
+        });
+
+        renderUI();
     </script>
 </body>
 </html>
