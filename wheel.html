@@ -2,31 +2,30 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>PSUWIT Admin - Wheel Control</title>
+    <title>PSUWIT Admin - Market Controller</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-950 text-white flex flex-col items-center justify-center min-h-screen p-6">
-    <div class="text-center mb-10">
-        <h1 class="text-4xl font-black text-yellow-500 mb-2">MARKET WHEEL</h1>
-        <p class="text-slate-400">ควบคุมปีการลงทุนและสถานะตลาด</p>
+<body class="bg-slate-900 text-white flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-black text-yellow-500 mb-2 uppercase">Market Master</h1>
+        <p class="text-slate-400">ควบคุมปีและราคาสำหรับผู้เล่น 40 คน</p>
     </div>
 
-    <div id="display-box" class="w-full max-w-md bg-slate-900 border-4 border-dashed border-slate-800 rounded-3xl p-10 text-center mb-10 transition-all">
-        <div id="year-label" class="text-xl font-bold text-slate-500 mb-2">เตรียมเริ่มเกม</div>
-        <div id="event-label" class="text-3xl font-black text-white">กดปุ่มเพื่อเริ่มปีที่ 1</div>
+    <div id="status-card" class="bg-slate-800 p-8 rounded-3xl border-4 border-dashed border-slate-700 w-full max-w-md text-center mb-8">
+        <h2 id="year-text" class="text-xl font-bold text-slate-500 mb-1">เตรียมเริ่มเกม</h2>
+        <p id="event-text" class="text-3xl font-black text-white uppercase">Waiting for Spin...</p>
     </div>
 
     <div class="grid grid-cols-2 gap-4 w-full max-w-md">
-        <button onclick="triggerMarket('BULL')" class="bg-green-600 hover:bg-green-500 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">ตลาดขาขึ้น 🚀</button>
-        <button onclick="triggerMarket('CRASH')" class="bg-red-600 hover:bg-red-500 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">ตลาดล่มสลาย 📉</button>
-        <button onclick="triggerMarket('GOLD_WAR')" class="bg-yellow-600 hover:bg-yellow-500 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">สงคราม! (ทอง) ⚔️</button>
-        <button onclick="triggerMarket('NORMAL')" class="bg-slate-700 hover:bg-slate-600 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">ตลาดปกติ ⚖️</button>
+        <button onclick="updateMarket('BULL')" class="bg-green-600 hover:bg-green-500 p-6 rounded-2xl font-bold text-xl active:scale-95 transition">BULL MARKET 🚀</button>
+        <button onclick="updateMarket('CRASH')" class="bg-red-600 hover:bg-red-500 p-6 rounded-2xl font-bold text-xl active:scale-95 transition">MARKET CRASH 📉</button>
+        <button onclick="updateMarket('GOLD_WAR')" class="bg-yellow-600 hover:bg-yellow-500 p-6 rounded-2xl font-bold text-xl active:scale-95 transition">GOLD RUSH ⚔️</button>
+        <button onclick="updateMarket('NORMAL')" class="bg-blue-600 hover:bg-blue-500 p-6 rounded-2xl font-bold text-xl active:scale-95 transition">NORMAL ⚖️</button>
     </div>
 
     <script>
-        // ใช้ Config จากภาพของคุณ
         const firebaseConfig = {
             apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
             authDomain: "psuwitwm.firebaseapp.com",
@@ -34,49 +33,37 @@
             projectId: "psuwitwm",
             storageBucket: "psuwitwm.firebasestorage.app",
             messagingSenderId: "268031926990",
-            appId: "1:268031926990:web:c58f8695deebf4a5f6e69f"
+            appId: "1:268031926990:web:c58f8695deebf4a5f6e69f",
+            measurementId: "G-3RNVWEJ4D4"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         let currentYear = 0;
 
-        function triggerMarket(type) {
-            currentYear++; // ทุกการกดคือ 1 ปี
-            
-            let multi = { psuwit: 1, btc: 1, gold: 1, save: 1 };
-            let msg = "";
-            let color = "";
+        function updateMarket(type) {
+            currentYear++; // ทุกการกดวงล้อคือ 1 ปี
+            let config = { year: currentYear, event: "", multi: { psuwit: 1, btc: 1, gold: 1, save: 1 } };
 
             if(type === 'BULL') {
-                multi = { psuwit: 1.5, btc: 2.5, gold: 0.9, save: 1 };
-                msg = "BULL MARKET!";
-                color = "#22c55e";
+                config.event = "ตลาดขาขึ้นอย่างรุนแรง!";
+                config.multi = { psuwit: 1.6, btc: 2.5, gold: 0.9, save: 1 };
             } else if(type === 'CRASH') {
-                multi = { psuwit: 0.4, btc: 0.2, gold: 0.7, save: 1 };
-                msg = "MARKET CRASH!";
-                color = "#ef4444";
+                config.event = "วิกฤตเศรษฐกิจ ตลาดล่มสลาย!";
+                config.multi = { psuwit: 0.4, btc: 0.2, gold: 0.8, save: 1 };
             } else if(type === 'GOLD_WAR') {
-                multi = { psuwit: 0.8, btc: 0.6, gold: 2.2, save: 1 };
-                msg = "GOLD RUSH!";
-                color = "#eab308";
+                config.event = "สงครามโลก! ราคาทองคำพุ่ง x2";
+                config.multi = { psuwit: 0.7, btc: 0.5, gold: 2.2, save: 1 };
             } else {
-                multi = { psuwit: 1.05, btc: 1.1, gold: 1.0, save: 1 };
-                msg = "STABLE MARKET";
-                color = "#94a3b8";
+                config.event = "สภาวะตลาดปกติ";
+                config.multi = { psuwit: 1.05, btc: 1.1, gold: 1.0, save: 1 };
             }
 
-            // ส่งข้อมูลไป Firebase เพื่อให้ผู้เล่นทุกคนเปลี่ยนพร้อมกัน
-            db.ref('game_state').set({
-                year: currentYear,
-                multipliers: multi,
-                eventName: msg
-            });
+            // ส่งค่าไป Firebase ที่เส้นทาง 'market_state'
+            db.ref('market_state').set(config);
 
-            // อัปเดตหน้าจอแอดมิน
-            document.getElementById('year-label').innerText = "ปีที่ " + currentYear;
-            document.getElementById('event-label').innerText = msg;
-            document.getElementById('display-box').style.borderColor = color;
+            document.getElementById('year-text').innerText = "ปีที่ " + currentYear;
+            document.getElementById('event-text').innerText = type;
         }
     </script>
 </body>
