@@ -3,34 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investment Simulator - PSUWIT</title>
+    <title>PSUWIT Investment Sim</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-gray-950 text-white p-4 min-h-screen font-sans">
+<body class="bg-[#0f172a] text-slate-200 p-4 min-h-screen">
     <div class="max-w-md mx-auto">
-        <header class="text-center mb-6">
-            <h1 class="text-yellow-500 text-3xl font-black italic uppercase italic">YEAR <span id="display-year">0</span></h1>
-            <p class="text-gray-400 text-xs">เงินทุนเริ่มต้นปีนี้: <span id="display-budget" class="font-bold">200,000</span></p>
-        </header>
-
-        <div class="bg-gray-900 rounded-3xl p-6 border border-gray-800 shadow-2xl mb-6 text-center">
-            <p class="text-gray-500 text-xs uppercase font-bold tracking-widest">Net Worth (มูลค่าพอร์ต)</p>
-            <h2 id="net-worth" class="text-4xl font-mono font-bold my-2">200,000.00</h2>
-            <div id="overall-diff" class="text-sm font-bold bg-gray-800 inline-block px-3 py-1 rounded-full text-gray-400">±0.00% (0.00)</div>
+        <div class="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <span class="bg-yellow-500 text-slate-900 px-3 py-1 rounded-full text-xs font-black uppercase">Year <span id="year-val">1</span></span>
+                <span class="text-xs text-slate-500">ทุนปีนี้: <b id="budget-display" class="text-slate-300">20,000</b></span>
+            </div>
+            <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">มูลค่าพอร์ตสุทธิ</p>
+            <h2 id="net-worth" class="text-4xl font-mono font-bold my-2 text-white">20,000.00</h2>
+            <div id="overall-diff" class="text-sm font-bold text-slate-500">±0.00% (0.00)</div>
         </div>
 
         <div id="asset-container" class="space-y-4"></div>
 
-        <div class="mt-6 p-4 bg-black/40 border border-dashed border-gray-700 rounded-2xl flex justify-between items-center">
-            <span class="text-gray-400 font-bold">เงินสดคงเหลือปีนี้:</span>
-            <span id="cash-left" class="text-2xl font-mono font-bold text-green-400">200,000</span>
+        <div class="mt-6 p-4 bg-slate-900/50 border border-dashed border-slate-700 rounded-2xl flex justify-between items-center">
+            <span class="text-slate-400 font-bold">เงินสดคงเหลือ:</span>
+            <span id="cash-left" class="text-2xl font-mono font-bold text-green-400">20,000</span>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = {
+        const firebaseConfig = { 
             apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
             authDomain: "psuwitwm.firebaseapp.com",
             databaseURL: "https://psuwitwm-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -42,24 +41,14 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentBudget = 200000; // เริ่มที่ 200,000 บาท
-        let basePrices = { psuwit: 100, btc: 0, gold: 34500, save: 1 };
+        let currentBudget = 20000; // เริ่มต้น 20,000 บาท
         let multipliers = { psuwit: 1, btc: 1, gold: 1, save: 1 };
         const assets = {
-            psuwit: { name: "หุ้น PSUWIT", invest: 0, color: "blue" },
+            psuwit: { name: "PSUWIT Stock", invest: 0, color: "blue" },
             btc: { name: "Bitcoin (BTC)", invest: 0, color: "orange" },
-            gold: { name: "ทองคำ", invest: 0, color: "yellow" },
-            save: { name: "ออมทรัพย์ (0.75%)", invest: 0, color: "emerald" }
+            gold: { name: "Gold (ทอง)", invest: 0, color: "yellow" },
+            save: { name: "Savings (ออม)", invest: 0, color: "emerald" }
         };
-
-        async function init() {
-            try {
-                const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCTHB');
-                const data = await res.json();
-                basePrices.btc = parseFloat(data.price);
-            } catch (e) { basePrices.btc = 1800000; }
-            renderUI();
-        }
 
         function renderUI() {
             const container = document.getElementById('asset-container');
@@ -68,51 +57,49 @@
             Object.keys(assets).forEach(key => {
                 const asset = assets[key];
                 const m = multipliers[key];
+                // ดอกเบี้ยออมทรัพย์ 0.75% ต่อปี
                 const currentVal = asset.invest * m * (key === 'save' ? 1.0075 : 1);
                 const diff = currentVal - asset.invest;
                 const pct = asset.invest > 0 ? (diff / asset.invest * 100).toFixed(2) : 0;
                 
-                // กำหนดสี: ราคาตลาด (m) และ กำไรขาดทุน (diff)
-                const priceColor = m > 1 ? 'text-green-400' : (m < 1 ? 'text-red-500' : 'text-white');
-                const diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-500' : 'text-gray-500');
+                const diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-500' : 'text-slate-500');
 
                 container.innerHTML += `
-                    <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 shadow-lg">
-                        <div class="flex justify-between mb-3 items-center">
+                    <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                        <div class="flex justify-between mb-3 text-sm">
                             <span class="font-bold text-${asset.color}-400">${asset.name}</span>
-                            <span class="text-xs font-mono bg-black px-2 py-1 rounded ${priceColor}">฿${(basePrices[key] * m).toLocaleString()}</span>
+                            <span class="font-mono text-slate-400">กำไร: <b class="${diffColor}">${diff.toLocaleString()}</b></span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div class="flex gap-2 mb-3">
                             <input type="number" id="num-${key}" value="${asset.invest}" 
-                                class="bg-black border border-gray-700 rounded-lg p-2 text-right text-yellow-500 text-sm font-mono"
+                                class="w-full bg-black border border-slate-700 rounded-lg p-2 text-right text-yellow-500 font-mono text-sm"
                                 onchange="handleUpdate('${key}', this.value)">
-                            <div class="text-right text-xs">
-                                <p class="text-gray-500 uppercase font-bold">มูลค่าปัจจุบัน</p>
-                                <p class="text-white font-mono font-bold">฿${currentVal.toLocaleString()}</p>
-                            </div>
                         </div>
-                        <input type="range" min="0" max="${currentBudget}" step="500" value="${asset.invest}" 
-                            class="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-${asset.color}-500"
+                        <input type="range" min="0" max="${currentBudget}" step="100" value="${asset.invest}" 
+                            class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-${asset.color}-500"
                             oninput="handleUpdate('${key}', this.value)">
-                        <div class="text-right mt-1 font-bold ${diffColor} text-[10px]">
-                            ${diff >= 0 ? '▲' : '▼'} ${pct}% (${diff.toLocaleString()})
+                        <div class="flex justify-between mt-2 text-[10px] font-bold uppercase tracking-tighter">
+                            <span class="text-slate-500">มูลค่าปัจจุบัน: <b class="text-white">${currentVal.toLocaleString()}</b></span>
+                            <span class="${diffColor}">${diff >= 0 ? '▲' : '▼'} ${pct}%</span>
                         </div>
                     </div>`;
             });
-            updateSummary();
+            updateTotal();
         }
 
         function handleUpdate(key, val) {
             let value = parseFloat(val) || 0;
             let otherSum = 0;
             Object.keys(assets).forEach(k => { if(k !== key) otherSum += assets[k].invest; });
+            
+            // ล็อกไม่ให้ลงทุนเกินเงินรวมที่มี
             if (otherSum + value > currentBudget) value = currentBudget - otherSum;
             
             assets[key].invest = value;
             renderUI();
         }
 
-        function updateSummary() {
+        function updateTotal() {
             let totalInvested = 0;
             let totalNow = 0;
             Object.keys(assets).forEach(key => {
@@ -131,31 +118,30 @@
             
             const overDiff = document.getElementById('overall-diff');
             overDiff.innerText = `${diffTotal >= 0 ? '+' : ''}${pctTotal}% (${diffTotal.toLocaleString()})`;
-            overDiff.className = `text-sm font-bold px-3 py-1 rounded-full ${diffTotal > 0 ? 'text-green-400 bg-green-500/10' : (diffTotal < 0 ? 'text-red-500 bg-red-500/10' : 'text-gray-400 bg-gray-800')}`;
+            // แสดงสีเขียวกำไร แดงขาดทุน
+            overDiff.className = `text-sm font-bold ${diffTotal > 0 ? 'text-green-400' : (diffTotal < 0 ? 'text-red-500' : 'text-slate-500')}`;
             
             return finalValue;
         }
 
-        // ฟังการเปลี่ยนปีจากหน้า Admin
         db.ref('market_state').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.year > 0) {
-                // 1. สรุปผลกำไรปีที่แล้วก่อน
-                const endOfYearValue = updateSummary();
-                // 2. ทุนปีใหม่ = พอร์ตสุทธิปีที่แล้ว
-                currentBudget = endOfYearValue;
+            if (data && data.year > 1) {
+                // ปีที่สองลงทุน ของเดิม+กำไร มาเป็นเงินทุน
+                currentBudget = updateTotal(); 
                 multipliers = data.multi;
-                // 3. รีเซ็ตให้เลือกใหม่
+                
+                // Reset การลงเงินเพื่อให้ปรับอันไหนว่าจะลงทุนเพิ่มหรือลด
                 Object.keys(assets).forEach(k => assets[k].invest = 0);
                 
-                document.getElementById('display-year').innerText = data.year;
-                document.getElementById('display-budget').innerText = currentBudget.toLocaleString();
+                document.getElementById('year-val').innerText = data.year;
+                document.getElementById('budget-display').innerText = currentBudget.toLocaleString();
                 renderUI();
-                alert("ปีที่ " + data.year + " เริ่มต้นขึ้นแล้ว! เงินทุนใหม่ของคุณคือ: " + currentBudget.toLocaleString());
+                alert("ปีที่ " + data.year + " เริ่มต้น! ทุนใหม่ของคุณคือ " + currentBudget.toLocaleString());
             }
         });
 
-        init();
+        renderUI();
     </script>
 </body>
 </html>
