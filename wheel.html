@@ -48,7 +48,7 @@ function sendToFirebase(year, multipliers) {
 
         function updateMarket(type) {
             currentYear++; // ทุกการกดวงล้อคือ 1 ปี
-            let config = { year: currentYear, event: "", multi: { psuwit: 1, btc: 1, gold: 1, save: 1 } };
+            let config = { year: currentYear, event: "", multi: { psuwit: 1.5, btc: 2.1, gold: 0.8, save: 1 } };
 
             if(type === 'BULL') {
                 config.event = "ตลาดขาขึ้นอย่างรุนแรง!";
