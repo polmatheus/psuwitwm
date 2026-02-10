@@ -8,46 +8,55 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
     <style>
-        .psuwit-acc { accent-color: #3b82f6; }
-        .btc-acc { accent-color: #f97316; }
-        .gold-acc { accent-color: #eab308; }
-        .save-acc { accent-color: #10b981; }
+        /* บังคับสีสไลด์บาร์ (Range Colors) */
+        input[type=range].psuwit-slider::-webkit-slider-thumb { background: #3b82f6; border: 3px solid white; -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; margin-top: -8px; }
+        input[type=range].btc-slider::-webkit-slider-thumb { background: #f97316; border: 3px solid white; -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; margin-top: -8px; }
+        input[type=range].gold-slider::-webkit-slider-thumb { background: #eab308; border: 3px solid white; -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; margin-top: -8px; }
+        input[type=range].save-slider::-webkit-slider-thumb { background: #10b981; border: 3px solid white; -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; margin-top: -8px; }
+        
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #334155; border-radius: 10px; }
+        
+        /* สีกำกับแทร็ก */
+        .psuwit-slider-track::-webkit-slider-runnable-track { background: #1e3a8a; }
+        .btc-slider-track::-webkit-slider-runnable-track { background: #7c2d12; }
+        .gold-slider-track::-webkit-slider-runnable-track { background: #713f12; }
+        .save-slider-track::-webkit-slider-runnable-track { background: #064e3b; }
     </style>
 </head>
-<body class="bg-[#0b0f1a] text-white p-4 min-h-screen">
+<body class="bg-[#0b0f1a] text-white p-4 min-h-screen font-sans">
     <div class="max-w-6xl mx-auto">
         <header class="text-center mb-8">
-            <h1 class="text-yellow-500 text-4xl font-black italic">YEAR <span id="year-ui">0</span></h1>
-            <div class="flex justify-center gap-6 mt-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                <span>เงินต้นสะสม: <span id="total-cap-ui" class="text-white">200,000</span></span>
-                <span>งบลงทุนปีนี้: <span id="budget-ui" class="text-white">200,000</span></span>
+            <h1 class="text-yellow-500 text-5xl font-black italic tracking-tighter">YEAR <span id="year-ui">0</span></h1>
+            <div class="flex justify-center gap-6 mt-3 text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">
+                <span>ต้นทุนสะสม: <span id="total-cap-ui" class="text-white">200,000</span></span>
+                <span>งบปีนี้: <span id="budget-ui" class="text-white">200,000</span></span>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div class="space-y-6">
-                <div class="bg-gray-900 rounded-3xl p-8 border border-gray-800 text-center relative overflow-hidden">
-                    <p class="text-gray-500 text-xs font-bold uppercase tracking-widest">Net Worth</p>
+                <div class="bg-slate-900 rounded-[2.5rem] p-10 border border-slate-800 text-center shadow-2xl">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Net Worth</p>
                     <h2 id="net-worth" class="text-5xl font-mono font-black my-2">200,000.00</h2>
-                    <div id="overall-diff" class="text-lg font-bold bg-gray-800 px-4 py-1 rounded-full inline-block mt-2">±0.00%</div>
+                    <div id="overall-diff" class="text-sm font-bold bg-slate-800 px-4 py-1 rounded-full inline-block mt-2">±0.00%</div>
                 </div>
 
-                <div class="flex gap-2 p-2 bg-gray-900 rounded-2xl border border-gray-800">
-                    <input type="number" id="add-cap-input" placeholder="จำนวนเงินที่ต้องการเติม..." class="flex-1 bg-transparent px-4 py-2 text-yellow-500 font-mono focus:outline-none">
-                    <button onclick="addCapital()" class="bg-yellow-500 text-black px-6 py-2 rounded-xl font-black uppercase text-xs">เติมทุน</button>
+                <div class="flex gap-2 p-2 bg-slate-900 rounded-2xl border border-slate-800">
+                    <input type="number" id="add-cap-input" placeholder="เติมเงินลงทุน..." class="flex-1 bg-transparent px-4 py-2 text-yellow-500 font-mono text-sm focus:outline-none">
+                    <button onclick="addCapital()" class="bg-yellow-500 text-slate-900 px-6 py-2 rounded-xl font-black uppercase text-xs hover:bg-yellow-400">เติมทุน</button>
                 </div>
 
-                <div id="asset-container" class="space-y-4"></div>
+                <div id="asset-container" class="space-y-5"></div>
 
-                <div class="p-5 bg-black/40 border border-dashed border-gray-700 rounded-3xl flex justify-between items-center">
-                    <span class="text-gray-500 font-bold uppercase text-xs">เงินสดคงเหลือ:</span>
-                    <span id="cash-left" class="text-3xl font-mono font-bold text-green-400">200,000</span>
+                <div class="p-6 bg-black/40 border-2 border-dashed border-slate-800 rounded-[2rem] flex justify-between items-center">
+                    <span class="text-slate-500 font-black uppercase text-xs">CASH LEFT:</span>
+                    <span id="cash-left" class="text-4xl font-mono font-black text-green-400">200,000</span>
                 </div>
             </div>
 
-            <div class="bg-gray-900/40 p-10 rounded-[3rem] border border-gray-800 flex flex-col items-center justify-center">
-                <h3 class="text-gray-500 font-black text-xs uppercase mb-8 tracking-[0.3em]">Portfolio Allocation</h3>
-                <div class="w-full max-w-[350px]">
+            <div class="bg-slate-900/40 p-12 rounded-[4rem] border border-slate-800 flex flex-col items-center">
+                <h3 class="text-slate-500 font-black text-xs uppercase mb-10 tracking-[0.4em]">Portfolio Allocation</h3>
+                <div class="w-full max-w-[400px]">
                     <canvas id="pieChart"></canvas>
                 </div>
             </div>
@@ -72,10 +81,10 @@
         let basePrices = { psuwit: 100, btc: 1800000, gold: 34500, save: 1 };
         
         const assets = {
-            psuwit: { name: "PSUWIT Stock", invest: 0, color: "blue", hex: "#3b82f6" },
-            btc: { name: "Bitcoin (BTC)", invest: 0, color: "orange", hex: "#f97316" },
-            gold: { name: "Gold (ทอง)", invest: 0, color: "yellow", hex: "#eab308" },
-            save: { name: "Savings (ออม)", invest: 0, color: "emerald", hex: "#10b981" }
+            psuwit: { name: "PSUWIT Stock", invest: 0, color: "psuwit", hex: "#3b82f6" },
+            btc: { name: "Bitcoin (BTC)", invest: 0, color: "btc", hex: "#f97316" },
+            gold: { name: "Gold (ทอง)", invest: 0, color: "gold", hex: "#eab308" },
+            save: { name: "Savings (ออม)", invest: 0, color: "save", hex: "#10b981" }
         };
 
         const ctx = document.getElementById('pieChart').getContext('2d');
@@ -85,12 +94,11 @@
                 labels: ['PSUWIT', 'BTC', 'GOLD', 'SAVINGS', 'CASH'],
                 datasets: [{
                     data: [0, 0, 0, 0, 200000],
-                    backgroundColor: ['#3b82f6', '#f97316', '#eab308', '#10b981', '#374151'],
-                    borderWidth: 0,
-                    hoverOffset: 20
+                    backgroundColor: ['#3b82f6', '#f97316', '#eab308', '#10b981', '#1e293b'],
+                    borderWidth: 0
                 }]
             },
-            options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { weight: 'bold', size: 10 } } } } }
+            options: { cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#475569', font: { weight: 'bold', size: 10 } } } } }
         });
 
         function renderUI() {
@@ -99,13 +107,15 @@
             Object.keys(assets).forEach(key => {
                 const a = assets[key];
                 container.innerHTML += `
-                    <div class="bg-gray-900 p-5 rounded-[2rem] border border-gray-800 transition hover:border-gray-700">
-                        <div class="flex justify-between mb-2">
-                            <span class="font-black text-${a.color}-400 text-[10px] uppercase tracking-widest">${a.name}</span>
-                            <span class="text-[10px] font-mono text-gray-500 tracking-tighter italic">Base Price: ฿${basePrices[key].toLocaleString()}</span>
+                    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800">
+                        <div class="flex justify-between mb-3 items-center">
+                            <span class="font-black text-xs uppercase tracking-widest" style="color:${a.hex}">${a.name}</span>
+                            <span class="text-[10px] font-mono text-slate-500 italic font-bold">Price: ฿${basePrices[key].toLocaleString(undefined,{maximumFractionDigits:0})}</span>
                         </div>
-                        <input type="number" value="${a.invest}" class="w-full bg-black/50 border border-gray-800 rounded-xl p-2 mb-3 text-right text-yellow-500 font-mono text-sm" onchange="handleUpdate('${key}', this.value)">
-                        <input type="range" min="0" max="${currentBudget}" step="100" value="${a.invest}" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer ${key}-acc bg-gray-800" oninput="handleUpdate('${key}', this.value)">
+                        <input type="number" value="${a.invest}" class="w-full bg-black border border-slate-800 rounded-xl p-2 mb-4 text-right text-yellow-500 font-mono text-sm focus:outline-none" onchange="handleUpdate('${key}', this.value)">
+                        <input type="range" min="0" max="${currentBudget}" step="100" value="${a.invest}" 
+                            class="w-full appearance-none cursor-pointer ${a.color}-slider ${a.color}-slider-track" 
+                            oninput="handleUpdate('${key}', this.value)">
                     </div>`;
             });
             updateSummary();
@@ -133,7 +143,7 @@
             let invested = 0;
             Object.keys(assets).forEach(k => invested += assets[k].invest);
             const cash = currentBudget - invested;
-            const totalCost = initialCap + addedCap;
+            const totalCost = initialCap + addedCap; // กำไรคิดจากเงินต้น 200,000 + ลงทุนเพิ่ม
             const diff = currentBudget - totalCost;
             const pct = (diff / totalCost * 100).toFixed(2);
 
@@ -144,7 +154,7 @@
             
             const diffUI = document.getElementById('overall-diff');
             diffUI.innerText = `${diff >= 0 ? '+' : ''}${pct}% (${diff.toLocaleString()})`;
-            diffUI.className = `text-sm font-bold px-4 py-1 rounded-full ${diff >= 0 ? 'text-green-400 bg-green-500/10' : 'text-red-500 bg-red-500/10'}`;
+            diffUI.className = `text-xs font-black px-4 py-1 rounded-full ${diff >= 0 ? 'text-green-400 bg-green-500/10' : 'text-rose-500 bg-rose-500/10'}`;
 
             pieChart.data.datasets[0].data = [assets.psuwit.invest, assets.btc.invest, assets.gold.invest, assets.save.invest, cash];
             pieChart.update();
@@ -154,29 +164,27 @@
             const data = snapshot.val();
             if (!data) return;
 
-            // แก้ไขปัญหา Infinite Refresh Loop: ใช้ฟังก์ชัน Reset แทนการโหลดหน้าใหม่
-            if (data.year === 0 && localYear !== 0) {
-                initialCap = 200000;
-                addedCap = 0;
-                currentBudget = 200000;
-                localYear = 0;
-                basePrices = { psuwit: 100, btc: 1800000, gold: 34500, save: 1 };
-                Object.keys(assets).forEach(k => assets[k].invest = 0);
-                document.getElementById('year-ui').innerText = "0";
-                renderUI();
+            if (data.year === 0) {
+                if(localYear !== 0) {
+                    initialCap = 200000; addedCap = 0; currentBudget = 200000; localYear = 0;
+                    basePrices = { psuwit: 100, btc: 1800000, gold: 34500, save: 1 };
+                    Object.keys(assets).forEach(k => assets[k].invest = 0);
+                    document.getElementById('year-ui').innerText = "0";
+                    renderUI();
+                }
                 return;
             }
 
             if (data.year > localYear) {
-                let finalYearVal = 0;
+                let endVal = 0;
                 let unused = currentBudget;
                 Object.keys(assets).forEach(key => {
                     unused -= assets[key].invest;
-                    const interest = (key === 'save') ? 1.0075 : 1;
-                    finalYearVal += (assets[key].invest * data.multi[key] * interest);
+                    const interest = (key === 'save') ? 1.0075 : 1; // ออมทรัพย์ 0.75%
+                    endVal += (assets[key].invest * data.multi[key] * interest);
                     if (key !== 'save') basePrices[key] *= data.multi[key];
                 });
-                currentBudget = finalYearVal + unused;
+                currentBudget = endVal + unused; // ปีที่สองลงทุน ของเดิม+กำไร มาเป็นเงินทุน
                 localYear = data.year;
                 Object.keys(assets).forEach(k => assets[k].invest = 0);
                 document.getElementById('year-ui').innerText = localYear;
