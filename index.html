@@ -2,34 +2,34 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSUWIT Investment - New Year Price Update</title>
+    <title>PSUWIT Investment Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
 <body class="bg-[#0b0f1a] text-white p-4 min-h-screen">
     <div class="max-w-md mx-auto">
-        <div class="bg-gray-900 rounded-3xl p-6 border border-gray-800 shadow-2xl mb-6">
-            <div class="flex justify-between items-center mb-4">
-                <span class="bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-black uppercase">Year <span id="year-val">1</span></span>
-                <span class="text-xs text-gray-400">ทุนตั้งต้นปีนี้: <b id="budget-display" class="text-white">20,000</b></span>
-            </div>
-            <p class="text-gray-500 text-xs font-bold uppercase">Net Worth (มูลค่าพอร์ต)</p>
+        <header class="text-center mb-6">
+            <h1 class="text-yellow-500 text-3xl font-black uppercase italic">YEAR <span id="year-val">0</span></h1>
+            <p class="text-gray-400 text-xs">วงเงินลงทุนปีนี้: <span id="budget-display" class="font-bold">20,000</span></p>
+        </header>
+
+        <div class="bg-gray-900 rounded-3xl p-6 border border-gray-800 shadow-2xl mb-6 text-center">
+            <p class="text-gray-500 text-xs uppercase font-bold">มูลค่าพอร์ตสุทธิ (Net Worth)</p>
             <h2 id="net-worth" class="text-4xl font-mono font-bold my-2 text-white">20,000.00</h2>
-            <div id="overall-diff" class="text-sm font-bold">±0.00% (0.00)</div>
+            <div id="overall-diff" class="text-sm font-bold bg-gray-800 inline-block px-3 py-1 rounded-full text-gray-400">±0.00%</div>
         </div>
 
         <div id="asset-container" class="space-y-4"></div>
 
-        <div class="mt-6 p-4 bg-gray-900/50 border border-dashed border-gray-700 rounded-2xl flex justify-between items-center">
+        <div class="mt-6 p-4 bg-black/40 border border-dashed border-gray-700 rounded-2xl flex justify-between items-center">
             <span class="text-gray-400 font-bold">เงินสดคงเหลือ:</span>
             <span id="cash-left" class="text-2xl font-mono font-bold text-green-400">20,000</span>
         </div>
     </div>
 
     <script>
-        // ใช้ Firebase Config เดิมของคุณ
+        // ใช้ Config ของคุณตามเดิม
         const firebaseConfig = { 
             apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
             authDomain: "psuwitwm.firebaseapp.com",
@@ -40,11 +40,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentBudget = 20000; // เริ่มต้น 20,000 บาท
-        let currentYear = 1;
-        // ราคาฐาน (จะถูกอัปเดตทุกปี)
+        let currentBudget = 20000;
+        let currentYear = 0; // *** เปลี่ยนเป็น 0 เพื่อให้เริ่มปี 1 ได้ ***
         let basePrices = { psuwit: 100, btc: 0, gold: 34500, save: 1 };
-        // ตัวคูณของปีปัจจุบัน (เริ่มที่ 1 เสมอเมื่อขึ้นปีใหม่)
         let multipliers = { psuwit: 1, btc: 1, gold: 1, save: 1 };
         
         const assets = {
@@ -54,12 +52,12 @@
             save: { name: "ออมทรัพย์ (0.75%)", invest: 0, color: "emerald" }
         };
 
-        async function initPrices() {
+        async function init() {
             try {
                 const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCTHB');
                 const data = await res.json();
                 basePrices.btc = parseFloat(data.price);
-            } catch (e) { basePrices.btc = 2100000; }
+            } catch (e) { basePrices.btc = 1800000; }
             renderUI();
         }
 
@@ -70,31 +68,32 @@
             Object.keys(assets).forEach(key => {
                 const asset = assets[key];
                 const m = multipliers[key];
-                // ดอกเบี้ยออมทรัพย์ 0.75%
                 const currentVal = asset.invest * m * (key === 'save' ? 1.0075 : 1);
                 const diff = currentVal - asset.invest;
                 const pct = asset.invest > 0 ? (diff / asset.invest * 100).toFixed(2) : 0;
-                const diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-500' : 'text-gray-500');
+                const diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-500' : 'text-gray-400');
 
                 container.innerHTML += `
                     <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800">
-                        <div class="flex justify-between mb-3">
+                        <div class="flex justify-between mb-3 items-center">
                             <span class="font-bold text-${asset.color}-400">${asset.name}</span>
-                            <span class="text-xs font-mono text-gray-400">ราคาตลาด: <b class="text-white">${basePrices[key].toLocaleString(undefined,{maximumFractionDigits:0})}</b></span>
+                            <span class="text-xs font-mono bg-black px-2 py-1 rounded">฿${(basePrices[key] * m).toLocaleString(undefined,{maximumFractionDigits:0})}</span>
                         </div>
-                        <input type="number" id="num-${key}" value="${asset.invest}" 
-                            class="w-full bg-black border border-gray-700 rounded-lg p-2 mb-3 text-right text-yellow-500 font-mono text-sm"
-                            onchange="handleUpdate('${key}', this.value)">
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <input type="number" id="num-${key}" value="${asset.invest}" 
+                                class="bg-black border border-gray-700 rounded-lg p-2 text-right text-yellow-500 text-sm font-mono"
+                                onchange="handleUpdate('${key}', this.value)">
+                            <div class="text-right text-xs">
+                                <p class="text-gray-500 uppercase font-bold">มูลค่าปัจจุบัน</p>
+                                <p class="text-white font-mono font-bold">฿${currentVal.toLocaleString()}</p>
+                            </div>
+                        </div>
                         <input type="range" min="0" max="${currentBudget}" step="100" value="${asset.invest}" 
                             class="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-${asset.color}-500"
                             oninput="handleUpdate('${key}', this.value)">
-                        <div class="flex justify-between mt-2 text-[10px] font-bold uppercase tracking-tighter">
-                            <span class="text-gray-500">มูลค่าปัจจุบัน: <b class="text-white">${currentVal.toLocaleString()}</b></span>
-                            <span class="${diffColor}">${diff >= 0 ? '▲' : '▼'} ${pct}% (${diff.toLocaleString()})</span>
-                        </div>
                     </div>`;
             });
-            updateSummary();
+            updateTotal();
         }
 
         function handleUpdate(key, val) {
@@ -106,56 +105,61 @@
             renderUI();
         }
 
-        function updateSummary() {
+        function updateTotal() {
+            let currentTotal = 0;
             let totalInvested = 0;
-            let totalNow = 0;
             Object.keys(assets).forEach(key => {
                 totalInvested += assets[key].invest;
                 const m = multipliers[key];
-                totalNow += (assets[key].invest * m * (key === 'save' ? 1.0075 : 1));
+                currentTotal += (assets[key].invest * m * (key === 'save' ? 1.0075 : 1));
             });
+
             const cashLeft = currentBudget - totalInvested;
-            const finalValue = totalNow + cashLeft;
-            const diffTotal = finalValue - currentBudget;
-            const pctTotal = (diffTotal / currentBudget * 100).toFixed(2);
+            const netWorth = currentTotal + cashLeft;
+            const diff = netWorth - currentBudget;
+            const pct = (diff / currentBudget * 100).toFixed(2);
 
             document.getElementById('cash-left').innerText = cashLeft.toLocaleString();
-            document.getElementById('net-worth').innerText = finalValue.toLocaleString(undefined, {minimumFractionDigits:2});
-            const overDiff = document.getElementById('overall-diff');
-            overDiff.innerText = `${diffTotal >= 0 ? '+' : ''}${pctTotal}% (${diffTotal.toLocaleString()})`;
-            overDiff.className = `text-sm font-bold ${diffTotal > 0 ? 'text-green-400' : (diffTotal < 0 ? 'text-red-500' : 'text-gray-500')}`;
-            return finalValue;
+            document.getElementById('net-worth').innerText = netWorth.toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('overall-diff').innerText = `${diff >= 0 ? '+' : ''}${pct}% (${diff.toLocaleString()})`;
+            document.getElementById('overall-diff').className = `text-sm font-bold px-3 py-1 rounded-full ${diff > 0 ? 'text-green-400 bg-green-500/10' : (diff < 0 ? 'text-red-500 bg-red-500/10' : 'text-gray-400 bg-gray-800')}`;
+            
+            return netWorth;
         }
 
-        // หัวใจสำคัญ: เมื่อหน้า Admin อัปเดตปี
+        // *** ส่วนที่แก้ไขเพื่อให้ Sync และคำนวณราคาใหม่ ***
         db.ref('market_state').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.year > currentYear) {
-                // 1. คำนวณมูลค่าพอร์ตสิ้นปี (รวมกำไร)
-                const finalYearValue = updateSummary();
-                
-                // 2. เซตเงินทุนใหม่สำหรับปีถัดไป
-                currentBudget = finalYearValue;
-                currentYear = data.year;
+                // 1. คำนวณกำไร/ขาดทุนจากพอร์ตที่ถืออยู่ ณ ราคาใหม่ทันที
+                multipliers = data.multi;
+                const resultValue = updateTotal(); 
 
-                // 3. เซตราคาฐานใหม่ตามผลสุ่ม (Price * Multiplier)
-                Object.keys(basePrices).forEach(key => {
-                    if (key !== 'save') {
-                        basePrices[key] = basePrices[key] * data.multi[key];
-                    }
-                });
+                // 2. แจ้งผลลัพธ์ปีที่ผ่านมา
+                setTimeout(() => {
+                    alert(`จบปีที่ ${currentYear}! ยอดเงินรวมใหม่ของคุณคือ ${resultValue.toLocaleString()} บาท`);
+                    
+                    // 3. เซตทุนใหม่สำหรับปีถัดไป
+                    currentBudget = resultValue;
+                    currentYear = data.year;
 
-                // 4. ล้างการลงทุนปีที่แล้วเพื่อให้ปรับใหม่
-                Object.keys(assets).forEach(k => assets[k].invest = 0);
-                
-                document.getElementById('year-val').innerText = currentYear;
-                document.getElementById('budget-display').innerText = currentBudget.toLocaleString(undefined,{maximumFractionDigits:0});
-                renderUI();
-                alert(`ปีที่ ${currentYear} เริ่มแล้ว! ราคาตลาดถูกอัปเดต และทุนใหม่ของคุณคือ ${currentBudget.toLocaleString()} บาท`);
+                    // 4. อัปเดตราคาฐานใหม่ (Base Price * Multiplier)
+                    Object.keys(basePrices).forEach(key => {
+                        if (key !== 'save') basePrices[key] *= data.multi[key];
+                    });
+
+                    // 5. รีเซ็ต Multipliers เป็น 1 (เพราะราคาฐานใหม่คือ 100% แล้ว) และล้างการลงเงิน
+                    multipliers = { psuwit: 1, btc: 1, gold: 1, save: 1 };
+                    Object.keys(assets).forEach(k => assets[k].invest = 0);
+
+                    document.getElementById('year-val').innerText = currentYear;
+                    document.getElementById('budget-display').innerText = currentBudget.toLocaleString();
+                    renderUI();
+                }, 500);
             }
         });
 
-        initPrices();
+        init();
     </script>
 </body>
 </html>
