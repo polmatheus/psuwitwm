@@ -49,82 +49,92 @@
 
     <script>
         // --- ส่วนการตั้งค่า Firebase ---
-        const firebaseConfig = { 
-  apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
-  authDomain: "psuwitwm.firebaseapp.com",
-  databaseURL: "https://psuwitwm-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "psuwitwm",
-  storageBucket: "psuwitwm.firebasestorage.app",
-  messagingSenderId: "268031926990",
-  appId: "1:268031926990:web:c58f8695deebf4a5f6e69f",
-  measurementId: "G-3RNVWEJ4D4" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+     const firebaseConfig = { 
+    apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
+    authDomain: "psuwitwm.firebaseapp.com",
+    databaseURL: "https://psuwitwm-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "psuwitwm",
+    storageBucket: "psuwitwm.firebasestorage.app",
+    messagingSenderId: "268031926990",
+    appId: "1:268031926990:web:c58f8695deebf4a5f6e69f",
+    measurementId: "G-3RNVWEJ4D4" 
+};
 
-        let initialCash = 200000;
-        let prices = { psuwit: 100, btc: 0, gold: 0, save: 1 };
-        let marketMultipliers = { psuwit: 1, btc: 1, gold: 1, save: 1 };
-        let holdings = { psuwit: 0, btc: 0, gold: 0, save: 0 };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-        async function initPrices() {
-            // ดึงราคาจริง (ตัวอย่าง API)
-            const btcRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCTHB');
-            const btcData = await btcRes.json();
-            prices.btc = parseFloat(btcData.price);
-            document.getElementById('p-btc').innerText = prices.btc.toLocaleString();
-            
-            prices.gold = 34000; // ราคาจำลอง หรือดึง API ทอง
-            document.getElementById('p-gold').innerText = prices.gold.toLocaleString();
-        }
+let initialCash = 200000;
+let prices = { psuwit: 100, btc: 0, gold: 34500, save: 1 };
+let marketMultipliers = { psuwit: 1, btc: 1, gold: 1, save: 1 };
 
-        // ฟังคำสั่งจากวงล้อ (Firebase)
-        db.ref('market').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                marketMultipliers = data;
-                updatePortfolio();
-            }
-        });
+async function initPrices() {
+    try {
+        // ดึงราคา BTC จริง
+        const btcRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCTHB');
+        const btcData = await btcRes.json();
+        prices.btc = parseFloat(btcData.price);
+    } catch (error) {
+        console.error("ดึงราคาไม่ได้ ใช้ราคาจำรองแทน");
+        prices.btc = 1800000; // ราคาสำรองกรณี API ล่ม
+    }
+    
+    // แสดงราคาบนหน้าจอ
+    document.getElementById('p-btc').innerText = prices.btc.toLocaleString();
+    document.getElementById('p-gold').innerText = prices.gold.toLocaleString();
+    updatePortfolio();
+}
 
-        function updatePortfolio() {
-            let total = 0;
-            let cashUsed = 0;
+// ฟังการอัปเดตจากหน้าวงล้อ (Admin)
+db.ref('market').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        marketMultipliers = data;
+        updatePortfolio();
+    }
+});
 
-            // คำนวณมูลค่าปัจจุบันตามตัวคูณจากวงล้อ
-            const assets = ['psuwit', 'btc', 'gold', 'save'];
-            assets.forEach(a => {
-                const investAmount = parseFloat(document.getElementById(`i-${a}`).value);
-                const currentVal = investAmount * marketMultipliers[a];
-                document.getElementById(`v-${a}`).innerText = currentVal.toLocaleString(undefined, {maximumFractionDigits:2});
-                total += currentVal;
-                cashUsed += investAmount;
-            });
+function updatePortfolio() {
+    let totalValueFromAssets = 0;
+    let cashUsed = 0;
+    const assets = ['psuwit', 'btc', 'gold', 'save'];
 
-            const cashLeft = initialCash - cashUsed;
-            document.getElementById('cash-left').innerText = cashLeft.toLocaleString();
-            
-            const finalValue = total + cashLeft;
-            const diff = finalValue - initialCash;
-            const percent = (diff / initialCash) * 100;
+    assets.forEach(a => {
+        const investAmount = parseFloat(document.getElementById(`i-${a}`).value) || 0;
+        const currentVal = investAmount * marketMultipliers[a];
+        
+        // แสดงมูลค่าสินทรัพย์แต่ละตัว
+        document.getElementById(`v-${a}`).innerText = currentVal.toLocaleString(undefined, {maximumFractionDigits:2});
+        
+        totalValueFromAssets += currentVal;
+        cashUsed += investAmount;
+    });
 
-            const totalEl = document.getElementById('total-value');
-            const plEl = document.getElementById('profit-loss');
+    const cashLeft = initialCash - cashUsed;
+    const finalPortfolioValue = totalValueFromAssets + cashLeft;
+    const diff = finalPortfolioValue - initialCash;
+    const percent = (diff / initialCash) * 100;
 
-            totalEl.innerText = finalValue.toLocaleString(undefined, {minimumFractionDigits:2});
-            plEl.innerText = `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}% (${diff.toLocaleString()})`;
-            
-            // เปลี่ยนสีเขียว/แดง
-            if(diff > 0) plEl.className = "text-lg font-bold text-green-400";
-            else if(diff < 0) plEl.className = "text-lg font-bold text-red-400";
-            else plEl.className = "text-lg font-bold text-white";
-        }
+    // อัปเดต UI หลัก
+    document.getElementById('cash-left').innerText = cashLeft.toLocaleString();
+    document.getElementById('total-value').innerText = finalPortfolioValue.toLocaleString(undefined, {minimumFractionDigits:2});
+    
+    const plEl = document.getElementById('profit-loss');
+    plEl.innerText = `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}% (${diff.toLocaleString()})`;
+    
+    // เปลี่ยนสีตามกำไร/ขาดทุน
+    plEl.className = `text-lg font-bold ${diff > 0 ? 'text-green-400' : diff < 0 ? 'text-red-400' : 'text-white'}`;
+    
+    // แจ้งเตือนถ้าเงินเกิน
+    document.getElementById('cash-left').className = `font-bold ${cashLeft < 0 ? 'text-red-500' : 'text-green-400'}`;
+}
 
-        // Event Listeners สำหรับ Slider
-        document.querySelectorAll('input[type=range]').forEach(input => {
-            input.addEventListener('input', updatePortfolio);
-        });
+// ผูกเหตุการณ์กับ Slider ทุกตัว
+document.querySelectorAll('input[type=range]').forEach(input => {
+    input.addEventListener('input', updatePortfolio);
+});
 
-        initPrices();
+// เริ่มทำงาน
+initPrices();
     </script>
 </body>
 </html>
