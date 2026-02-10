@@ -81,6 +81,27 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let currentYear = 0;
+
+function spin() {
+    // ... โค้ดการหมุนเดิม ...
+    setTimeout(() => {
+        currentYear++;
+        
+        const marketUpdate = {
+            year: currentYear,
+            multi: result.multi // ตัวคูณที่สุ่มได้จากวงล้อ
+        };
+
+        db.ref('market_state').set(marketUpdate);
+        
+        document.getElementById('status-display').innerText = `เข้าสู่ปีที่ ${currentYear}: ${result.name}`;
+    }, 4000);
+}
+
+
+
+        
         let currentRotation = 0;
 
         // รายการเหตุการณ์และตัวคูณ (Multipliers)
