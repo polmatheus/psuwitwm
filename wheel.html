@@ -38,7 +38,12 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
+function sendToFirebase(year, multipliers) {
+    db.ref('market_state').set({
+        year: year,
+        multi: multipliers
+    });
+}
         let currentYear = 0;
 
         function updateMarket(type) {
