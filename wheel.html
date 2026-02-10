@@ -2,23 +2,21 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>PSUWIT Admin - 20 Market Events</title>
+    <title>Admin - 20 Market Events</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-950 text-white p-6 flex flex-col items-center min-h-screen font-sans">
-    <h1 class="text-3xl font-black text-yellow-500 mb-8 uppercase tracking-tighter">Market Master Control</h1>
-    
-    <div class="bg-slate-900 p-8 rounded-[2rem] border-4 border-dashed border-slate-800 text-center mb-8 w-full max-w-md shadow-2xl">
-        <div id="year-display" class="text-xl text-slate-500 uppercase font-black">Ready</div>
-        <div id="event-name" class="text-3xl font-black mt-2 text-white uppercase tracking-tight">YEAR 0</div>
-        <div id="event-desc" class="text-xs text-yellow-500 mt-4 font-mono uppercase tracking-[0.2em] animate-pulse">Waiting for Random...</div>
-    </div>
-
-    <div class="flex flex-col gap-4 w-full max-w-md">
-        <button onclick="randomEvent()" class="bg-blue-600 hover:bg-blue-500 p-8 rounded-3xl font-black text-2xl shadow-xl active:scale-95 transition-all uppercase">Random Year 🎲</button>
-        <button onclick="resetGame()" class="bg-rose-600/20 text-rose-500 border border-rose-600/30 p-4 rounded-2xl font-black uppercase hover:bg-rose-600 hover:text-white mt-4 transition-all text-xs">Reset All to Year 0</button>
+<body class="bg-slate-950 text-white flex flex-col items-center justify-center min-h-screen">
+    <div class="bg-slate-900 p-10 rounded-[3rem] border-4 border-dashed border-slate-800 text-center shadow-2xl w-full max-w-lg">
+        <h1 class="text-yellow-500 text-3xl font-black mb-4 uppercase">Market Wheel</h1>
+        <div id="year-ui" class="text-slate-500 font-bold text-xl mb-1">READY</div>
+        <div id="event-ui" class="text-4xl font-black text-white mb-6 uppercase tracking-tighter italic">YEAR 0</div>
+        
+        <div class="flex flex-col gap-4">
+            <button onclick="spin()" class="bg-blue-600 hover:bg-blue-500 p-6 rounded-3xl font-black text-2xl shadow-lg transition-all active:scale-95">RANDOM EVENT 🎲</button>
+            <button onclick="reset()" class="text-slate-500 hover:text-white text-xs font-bold uppercase mt-4">Reset Game</button>
+        </div>
     </div>
 
     <script>
@@ -34,47 +32,40 @@
 
         let currentYear = 0;
         const events = [
-            { n: "Bull Run", m: {psuwit: 1.6, btc: 2.8, gold: 0.9, save: 1} },
-            { n: "Crypto Winter", m: {psuwit: 1.1, btc: 0.15, gold: 1.2, save: 1} },
-            { n: "War Crisis", m: {psuwit: 0.5, btc: 0.4, gold: 3.2, save: 1} },
-            { n: "AI Boom", m: {psuwit: 2.8, btc: 1.4, gold: 0.8, save: 1} },
-            { n: "Hyper Inflation", m: {psuwit: 1.8, btc: 2.0, gold: 2.0, save: 1} },
-            { n: "Global Recession", m: {psuwit: 0.3, btc: 0.3, gold: 1.1, save: 1} },
-            { n: "Gold Discovery", m: {psuwit: 1.0, btc: 1.0, gold: 0.4, save: 1} },
-            { n: "BTC Halving", m: {psuwit: 1.2, btc: 3.8, gold: 1.0, save: 1} },
-            { n: "PSUWIT Success", m: {psuwit: 5.0, btc: 1.0, gold: 1.0, save: 1} },
-            { n: "Tech Meltdown", m: {psuwit: 0.2, btc: 0.6, gold: 1.5, save: 1} },
+            { n: "Bull Run", m: {psuwit: 1.8, btc: 3.0, gold: 0.9, save: 1} },
+            { n: "Crypto Winter", m: {psuwit: 1.1, btc: 0.1, gold: 1.1, save: 1} },
+            { n: "War Crisis", m: {psuwit: 0.5, btc: 0.3, gold: 3.5, save: 1} },
+            { n: "AI Revolution", m: {psuwit: 3.2, btc: 1.5, gold: 0.7, save: 1} },
+            { n: "Hyper Inflation", m: {psuwit: 2.0, btc: 2.0, gold: 2.0, save: 1} },
+            { n: "Recession", m: {psuwit: 0.2, btc: 0.2, gold: 1.2, save: 1} },
+            { n: "Gold Discovery", m: {psuwit: 1.0, btc: 1.0, gold: 0.3, save: 1} },
+            { n: "BTC Halving", m: {psuwit: 1.1, btc: 4.5, gold: 1.0, save: 1} },
+            { n: "IPO Success", m: {psuwit: 6.0, btc: 1.0, gold: 1.0, save: 1} },
+            { n: "Tech Meltdown", m: {psuwit: 0.1, btc: 0.5, gold: 1.6, save: 1} },
             { n: "Stability Act", m: {psuwit: 1.05, btc: 1.05, gold: 1.05, save: 1} },
-            { n: "Pandemic Strike", m: {psuwit: 0.6, btc: 1.6, gold: 1.9, save: 1} },
-            { n: "Space Race", m: {psuwit: 3.0, btc: 1.1, gold: 0.7, save: 1} },
-            { n: "Crypto Ban", m: {psuwit: 0.9, btc: 0.05, gold: 1.3, save: 1} },
-            { n: "Energy Revolution", m: {psuwit: 2.5, btc: 1.0, gold: 0.5, save: 1} },
-            { n: "Oil Crisis", m: {psuwit: 0.4, btc: 0.8, gold: 2.5, save: 1} },
-            { n: "Peace Treaty", m: {psuwit: 1.5, btc: 1.2, gold: 0.6, save: 1} },
-            { n: "Cyber Attack", m: {psuwit: 0.4, btc: 0.3, gold: 1.4, save: 1} },
-            { n: "Moon Mission", m: {psuwit: 6.0, btc: 6.0, gold: 0.1, save: 1} },
-            { n: "Market Crash", m: {psuwit: 0.1, btc: 0.4, gold: 1.8, save: 1} }
+            { n: "New Energy", m: {psuwit: 2.8, btc: 1.0, gold: 0.4, save: 1} },
+            { n: "Space Mining", m: {psuwit: 3.5, btc: 1.1, gold: 0.1, save: 1} },
+            { n: "Peace Treaty", m: {psuwit: 1.6, btc: 1.2, gold: 0.6, save: 1} },
+            { n: "Oil Surge", m: {psuwit: 0.4, btc: 0.8, gold: 2.8, save: 1} },
+            { n: "Cyber Attack", m: {psuwit: 0.3, btc: 0.2, gold: 1.5, save: 1} },
+            { n: "Market Mania", m: {psuwit: 2.2, btc: 2.2, gold: 0.5, save: 1} },
+            { n: "De-Dollarization", m: {psuwit: 0.8, btc: 2.5, gold: 2.5, save: 1} },
+            { n: "Global Drought", m: {psuwit: 0.6, btc: 0.9, gold: 1.8, save: 1} },
+            { n: "Utopia Found", m: {psuwit: 10.0, btc: 10.0, gold: 0.0, save: 1} }
         ];
 
-        function randomEvent() {
+        function spin() {
             currentYear++;
-            const selected = events[Math.floor(Math.random() * events.length)];
-            db.ref('market_state').set({
-                year: currentYear,
-                event: selected.n,
-                multi: selected.m,
-                ts: Date.now()
-            });
-            document.getElementById('year-display').innerText = `YEAR ${currentYear}`;
-            document.getElementById('event-name').innerText = selected.n;
-            document.getElementById('event-desc').innerText = "Market Updated!";
+            const sel = events[Math.floor(Math.random() * events.length)];
+            db.ref('market_state').set({ year: currentYear, event: sel.n, multi: sel.m, ts: Date.now() });
+            document.getElementById('year-ui').innerText = `YEAR ${currentYear}`;
+            document.getElementById('event-ui').innerText = sel.n;
         }
 
-        function resetGame() {
+        function reset() {
             currentYear = 0;
-            db.ref('market_state').set({ year: 0, multi: { psuwit: 1, btc: 1, gold: 1, save: 1 }, event: "Reset" });
-            document.getElementById('year-display').innerText = "YEAR 0";
-            document.getElementById('event-name').innerText = "GAME RESET";
+            db.ref('market_state').set({ year: 0, multi: {psuwit: 1, btc: 1, gold: 1, save: 1} });
+            location.reload();
         }
     </script>
 </body>
