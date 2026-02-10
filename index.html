@@ -172,6 +172,26 @@
         });
 
         init();
+        db.ref('game_state').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        // 1. คำนวณ Net Worth สิ้นปีที่แล้วก่อนเปลี่ยน
+        const lastYearNetWorth = calculateCurrentTotal(); 
+        
+        // 2. ตั้ง Net Worth นั้นเป็นเงินต้น (Budget) ของปีใหม่
+        currentBudget = lastYearNetWorth;
+        currentMultipliers = data.multipliers;
+        
+        // 3. รีเซ็ต Slider ทุกตัวให้เป็น 0 เพื่อเริ่มวางแผนปีใหม่
+        resetInputs(); 
+        
+        // 4. อัปเดต UI
+        document.getElementById('display-year').innerText = data.year;
+        document.getElementById('display-budget').innerText = currentBudget.toLocaleString();
+        
+        alert("เข้าสู่ปีที่ " + data.year + " ยอดเงินลงทุนใหม่ของคุณคือ: " + currentBudget.toLocaleString() + " บาท");
+    }
+});
     </script>
 </body>
 </html>
