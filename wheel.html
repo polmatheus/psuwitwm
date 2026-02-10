@@ -1,58 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <title>Wheel of Market</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSUWIT Market Wheel (Admin)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
     <style>
-        #wheel { transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+        /* สไตล์วงล้อ */
+        #wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #334155;
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            background: conic-gradient(
+                #ef4444 0deg 60deg,    /* Crash */
+                #22c55e 60deg 120deg,  /* Bull */
+                #eab308 120deg 180deg, /* Gold Rush */
+                #3b82f6 180deg 240deg, /* PSUWIT Moon */
+                #a855f7 240deg 300deg, /* Crypto Winter */
+                #64748b 300deg 360deg  /* Normal */
+            );
+        }
+        #pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #ffffff;
+            z-index: 10;
+        }
     </style>
 </head>
-<body class="bg-black text-white flex flex-col items-center justify-center min-h-screen">
-    <h1 class="text-3xl font-bold mb-8">ตลาดผันผวน! (Admin Only)</h1>
-    
-    <div id="wheel" class="w-64 h-64 border-8 border-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold bg-gray-800">
-        ?
+<body class="bg-slate-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-black text-yellow-500 uppercase">Market Controller</h1>
+        <p class="text-slate-400">ควบคุมตลาดสำหรับผู้เล่น 40 คน</p>
     </div>
 
-    <button onclick="spinWheel()" class="mt-10 bg-red-600 hover:bg-red-700 px-8 py-4 rounded-full text-xl font-bold shadow-lg">
-        หมุนวงล้อเปลี่ยนโลก!
+    <div id="wheel-container">
+        <div id="pointer"></div>
+        <div id="wheel"></div>
+    </div>
+
+    <div id="status-box" class="mt-8 p-4 bg-slate-800 rounded-xl border border-slate-700 w-full max-w-xs text-center">
+        <p class="text-sm text-slate-400">สถานะปัจจุบัน:</p>
+        <p id="current-event" class="text-xl font-bold text-white">รอกดหมุนวงล้อ...</p>
+    </div>
+
+    <button id="spin-btn" onclick="spin()" class="mt-6 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-4 px-10 rounded-full text-xl shadow-lg transform active:scale-95 transition">
+        หมุนวงล้อสุ่มราคา!
     </button>
 
-    <p id="status" class="mt-4 text-yellow-400 font-mono"></p>
-
     <script>
-        const firebaseConfig = { /* ใส่ Config เดียวกับด้านบน */ };
+        // --- Firebase Config (ใช้ตัวเดียวกับหน้าผู้เล่น) ---
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
+            authDomain: "psuwitwm.firebaseapp.com",
+            databaseURL: "https://psuwitwm-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "psuwitwm",
+            storageBucket: "psuwitwm.firebasestorage.app",
+            messagingSenderId: "268031926990",
+            appId: "1:268031926990:web:c58f8695deebf4a5f6e69f",
+            measurementId: "G-3RNVWEJ4D4" 
+        };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function spinWheel() {
-            const btn = document.querySelector('button');
+        let currentRotation = 0;
+
+        // รายการเหตุการณ์และตัวคูณ (Multipliers)
+        const events = [
+            { name: "🔴 ตลาดล่มสลาย (CRASH)", color: "#ef4444", multi: { psuwit: 0.5, btc: 0.4, gold: 0.8, save: 1 } },
+            { name: "🟢 ตลาดกระทิง (BULL)", color: "#22c55e", multi: { psuwit: 1.4, btc: 1.6, gold: 1.1, save: 1 } },
+            { name: "🟡 ทองคำพุ่งแรง (GOLD RUSH)", color: "#eab308", multi: { psuwit: 0.9, btc: 0.8, gold: 2.5, save: 1 } },
+            { name: "🔵 หุ้น PSUWIT พุ่ง (TO THE MOON)", color: "#3b82f6", multi: { psuwit: 3.0, btc: 1.0, gold: 1.0, save: 1 } },
+            { name: "🟣 วิกฤตคริปโต (CRYPTO WINTER)", color: "#a855f7", multi: { psuwit: 1.1, btc: 0.2, gold: 1.2, save: 1 } },
+            { name: "⚪ สภาวะปกติ (STABLE)", color: "#64748b", multi: { psuwit: 1.0, btc: 1.0, gold: 1.0, save: 1 } }
+        ];
+
+        function spin() {
+            const btn = document.getElementById('spin-btn');
             btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            // สุ่มเหตุการณ์
-            const events = [
-                { name: "วิกฤตเศรษฐกิจ", multi: {psuwit: 0.5, btc: 0.7, gold: 1.2, save: 1.0} },
-                { name: "Bull Market", multi: {psuwit: 1.5, btc: 2.0, gold: 0.9, save: 1.0} },
-                { name: "PSUWIT New High", multi: {psuwit: 3.0, btc: 1.0, gold: 1.0, save: 1.0} },
-                { name: "สงครามโลก", multi: {psuwit: 0.2, btc: 0.5, gold: 2.5, save: 1.0} }
-            ];
+            // สุ่มองศาการหมุน (อย่างน้อย 5 รอบ)
+            const randomDegree = Math.floor(Math.random() * 360);
+            const totalRotation = currentRotation + 1800 + randomDegree; 
+            currentRotation = totalRotation;
 
-            const result = events[Math.floor(Math.random() * events.length)];
-            
-            // หมุน UI (จำลอง)
-            const deg = Math.floor(5000 + Math.random() * 5000);
-            document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${totalRotation}deg)`;
+
+            // คำนวณว่าตกช่องไหน (มี 6 ช่อง ช่องละ 60 องศา)
+            // ต้องคำนวณย้อนกลับจากองศาที่หยุด
+            const actualDegree = (360 - (totalRotation % 360)) % 360;
+            const eventIndex = Math.floor(actualDegree / 60);
+            const result = events[eventIndex];
 
             setTimeout(() => {
-                document.getElementById('wheel').innerText = result.name;
-                document.getElementById('status').innerText = `ส่งผลต่อผู้เล่น 40 คนแล้ว!`;
-                
-                // ส่งค่าไป Firebase
+                // อัปเดต UI หน้าวงล้อ
+                const statusText = document.getElementById('current-event');
+                statusText.innerText = result.name;
+                statusText.style.color = result.color;
+
+                // **หัวใจสำคัญ: ส่งค่าไป Firebase**
                 db.ref('market').set(result.multi);
+
                 btn.disabled = false;
-            }, 4000);
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }, 4000); // รอจนกว่าวงล้อจะหยุด (4 วินาที)
         }
     </script>
 </body>
