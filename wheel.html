@@ -1,55 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <title>PSUWIT Admin Wheel</title>
+    <meta charset="UTF-8">
+    <title>PSUWIT Admin - Wheel Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-black text-white p-10 flex flex-col items-center min-h-screen">
-    <h1 class="text-4xl font-black mb-10 text-yellow-500">MARKET CONTROL CENTER</h1>
-    
-    <div id="status" class="mb-10 text-3xl font-mono text-center p-6 border-4 border-dashed border-gray-700 rounded-3xl w-full max-w-2xl">
-        กดเพื่อเริ่ม YEAR 1
+<body class="bg-slate-950 text-white flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-black text-yellow-500 mb-2">MARKET WHEEL</h1>
+        <p class="text-slate-400">ควบคุมปีการลงทุนและสถานะตลาด</p>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 w-full max-w-2xl">
-        <button onclick="spin('BULL')" class="bg-green-600 p-8 rounded-2xl text-2xl font-bold hover:scale-105 transition">BULL MARKET 🚀</button>
-        <button onclick="spin('CRASH')" class="bg-red-600 p-8 rounded-2xl text-2xl font-bold hover:scale-105 transition">MARKET CRASH 📉</button>
-        <button onclick="spin('WAR')" class="bg-yellow-600 p-8 rounded-2xl text-2xl font-bold hover:scale-105 transition">GOLD RUSH ⚔️</button>
-        <button onclick="spin('RESET')" class="bg-blue-600 p-8 rounded-2xl text-2xl font-bold hover:scale-105 transition">STABLE YEAR ⚖️</button>
+    <div id="display-box" class="w-full max-w-md bg-slate-900 border-4 border-dashed border-slate-800 rounded-3xl p-10 text-center mb-10 transition-all">
+        <div id="year-label" class="text-xl font-bold text-slate-500 mb-2">เตรียมเริ่มเกม</div>
+        <div id="event-label" class="text-3xl font-black text-white">กดปุ่มเพื่อเริ่มปีที่ 1</div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+        <button onclick="triggerMarket('BULL')" class="bg-green-600 hover:bg-green-500 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">ตลาดขาขึ้น 🚀</button>
+        <button onclick="triggerMarket('CRASH')" class="bg-red-600 hover:bg-red-500 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">ตลาดล่มสลาย 📉</button>
+        <button onclick="triggerMarket('GOLD_WAR')" class="bg-yellow-600 hover:bg-yellow-500 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">สงคราม! (ทอง) ⚔️</button>
+        <button onclick="triggerMarket('NORMAL')" class="bg-slate-700 hover:bg-slate-600 p-6 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition">ตลาดปกติ ⚖️</button>
     </div>
 
     <script>
-        const firebaseConfig = { /* ใส่ Config ของคุณเหมือนด้านบน */ };
+        // ใช้ Config จากภาพของคุณ
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
+            authDomain: "psuwitwm.firebaseapp.com",
+            databaseURL: "https://psuwitwm-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "psuwitwm",
+            storageBucket: "psuwitwm.firebasestorage.app",
+            messagingSenderId: "268031926990",
+            appId: "1:268031926990:web:c58f8695deebf4a5f6e69f"
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
+
         let currentYear = 0;
 
-        function spin(type) {
-            currentYear++;
+        function triggerMarket(type) {
+            currentYear++; // ทุกการกดคือ 1 ปี
+            
             let multi = { psuwit: 1, btc: 1, gold: 1, save: 1 };
             let msg = "";
+            let color = "";
 
             if(type === 'BULL') {
-                multi = { psuwit: 1.5, btc: 2.1, gold: 0.9, save: 1 };
-                msg = "🚀 ปีที่ "+currentYear+": ตลาดพุ่งแรง!";
+                multi = { psuwit: 1.5, btc: 2.5, gold: 0.9, save: 1 };
+                msg = "BULL MARKET!";
+                color = "#22c55e";
             } else if(type === 'CRASH') {
-                multi = { psuwit: 0.4, btc: 0.3, gold: 0.8, save: 1 };
-                msg = "📉 ปีที่ "+currentYear+": วิกฤตเศรษฐกิจ!";
-            } else if(type === 'WAR') {
-                multi = { psuwit: 0.7, btc: 0.5, gold: 2.5, save: 1 };
-                msg = "⚔️ ปีที่ "+currentYear+": สงคราม! ทองพุ่ง";
+                multi = { psuwit: 0.4, btc: 0.2, gold: 0.7, save: 1 };
+                msg = "MARKET CRASH!";
+                color = "#ef4444";
+            } else if(type === 'GOLD_WAR') {
+                multi = { psuwit: 0.8, btc: 0.6, gold: 2.2, save: 1 };
+                msg = "GOLD RUSH!";
+                color = "#eab308";
             } else {
-                msg = "⚖️ ปีที่ "+currentYear+": ตลาดทรงตัว";
+                multi = { psuwit: 1.05, btc: 1.1, gold: 1.0, save: 1 };
+                msg = "STABLE MARKET";
+                color = "#94a3b8";
             }
 
-            db.ref('market_state').set({
+            // ส่งข้อมูลไป Firebase เพื่อให้ผู้เล่นทุกคนเปลี่ยนพร้อมกัน
+            db.ref('game_state').set({
                 year: currentYear,
-                multi: multi
+                multipliers: multi,
+                eventName: msg
             });
-            document.getElementById('status').innerText = msg;
+
+            // อัปเดตหน้าจอแอดมิน
+            document.getElementById('year-label').innerText = "ปีที่ " + currentYear;
+            document.getElementById('event-label').innerText = msg;
+            document.getElementById('display-box').style.borderColor = color;
         }
     </script>
 </body>
