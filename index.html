@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSUWIT Investment Sim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-5">
+    <div class="max-w-md mx-auto bg-gray-800 rounded-xl shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-4 text-center text-yellow-500">จำลองการลงทุน 200,000.-</h1>
+        
+        <div id="portfolio-card" class="bg-gray-700 p-4 rounded-lg mb-6 border-l-4 border-blue-500">
+            <p class="text-sm opacity-70">มูลค่าพอร์ตปัจจุบัน</p>
+            <h2 id="total-value" class="text-3xl font-mono font-bold">200,000.00</h2>
+            <p id="profit-loss" class="text-lg font-bold">±0% (0.00)</p>
+        </div>
+
+        <div class="space-y-4">
+            <div class="flex justify-between">
+                <span>เงินสดคงเหลือ:</span>
+                <span id="cash-left" class="font-bold text-green-400">200,000</span>
+            </div>
+
+            <hr class="border-gray-600">
+
+            <div class="space-y-6">
+                <div>
+                    <label class="flex justify-between text-sm"><span>หุ้น PSUWIT (ราคา: <span id="p-psuwit">100</span>)</span> <span id="v-psuwit">0</span></label>
+                    <input type="range" id="i-psuwit" min="0" max="200000" value="0" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <div>
+                    <label class="flex justify-between text-sm"><span>BTC (ราคา: <span id="p-btc">...</span>)</span> <span id="v-btc">0</span></label>
+                    <input type="range" id="i-btc" min="0" max="200000" value="0" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <div>
+                    <label class="flex justify-between text-sm"><span>ทองคำ (ราคา: <span id="p-gold">...</span>)</span> <span id="v-gold">0</span></label>
+                    <input type="range" id="i-gold" min="0" max="200000" value="0" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <div>
+                    <label class="flex justify-between text-sm"><span>ออมทรัพย์ (0.75%/ปี)</span> <span id="v-save">0</span></label>
+                    <input type="range" id="i-save" min="0" max="200000" value="0" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ส่วนการตั้งค่า Firebase ---
+        const firebaseConfig = { 
+  apiKey: "AIzaSyDkewWSMrL538xerq70Ae90Svv8_p75Uks",
+  authDomain: "psuwitwm.firebaseapp.com",
+  databaseURL: "https://psuwitwm-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "psuwitwm",
+  storageBucket: "psuwitwm.firebasestorage.app",
+  messagingSenderId: "268031926990",
+  appId: "1:268031926990:web:c58f8695deebf4a5f6e69f",
+  measurementId: "G-3RNVWEJ4D4" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let initialCash = 200000;
+        let prices = { psuwit: 100, btc: 0, gold: 0, save: 1 };
+        let marketMultipliers = { psuwit: 1, btc: 1, gold: 1, save: 1 };
+        let holdings = { psuwit: 0, btc: 0, gold: 0, save: 0 };
+
+        async function initPrices() {
+            // ดึงราคาจริง (ตัวอย่าง API)
+            const btcRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCTHB');
+            const btcData = await btcRes.json();
+            prices.btc = parseFloat(btcData.price);
+            document.getElementById('p-btc').innerText = prices.btc.toLocaleString();
+            
+            prices.gold = 34000; // ราคาจำลอง หรือดึง API ทอง
+            document.getElementById('p-gold').innerText = prices.gold.toLocaleString();
+        }
+
+        // ฟังคำสั่งจากวงล้อ (Firebase)
+        db.ref('market').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                marketMultipliers = data;
+                updatePortfolio();
+            }
+        });
+
+        function updatePortfolio() {
+            let total = 0;
+            let cashUsed = 0;
+
+            // คำนวณมูลค่าปัจจุบันตามตัวคูณจากวงล้อ
+            const assets = ['psuwit', 'btc', 'gold', 'save'];
+            assets.forEach(a => {
+                const investAmount = parseFloat(document.getElementById(`i-${a}`).value);
+                const currentVal = investAmount * marketMultipliers[a];
+                document.getElementById(`v-${a}`).innerText = currentVal.toLocaleString(undefined, {maximumFractionDigits:2});
+                total += currentVal;
+                cashUsed += investAmount;
+            });
+
+            const cashLeft = initialCash - cashUsed;
+            document.getElementById('cash-left').innerText = cashLeft.toLocaleString();
+            
+            const finalValue = total + cashLeft;
+            const diff = finalValue - initialCash;
+            const percent = (diff / initialCash) * 100;
+
+            const totalEl = document.getElementById('total-value');
+            const plEl = document.getElementById('profit-loss');
+
+            totalEl.innerText = finalValue.toLocaleString(undefined, {minimumFractionDigits:2});
+            plEl.innerText = `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}% (${diff.toLocaleString()})`;
+            
+            // เปลี่ยนสีเขียว/แดง
+            if(diff > 0) plEl.className = "text-lg font-bold text-green-400";
+            else if(diff < 0) plEl.className = "text-lg font-bold text-red-400";
+            else plEl.className = "text-lg font-bold text-white";
+        }
+
+        // Event Listeners สำหรับ Slider
+        document.querySelectorAll('input[type=range]').forEach(input => {
+            input.addEventListener('input', updatePortfolio);
+        });
+
+        initPrices();
+    </script>
+</body>
+</html>
